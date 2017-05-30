@@ -1,0 +1,11 @@
+newmtl bunny
+Kd 0.5 0.6 1
+Ke 0 0 0
+Ka 0.8 0.8 0.8
+Ks 0.3 0.3 0.3
+Ns 600
+Tr 0
+d 1
+Ni 1
+Tf 1 1 1
+
