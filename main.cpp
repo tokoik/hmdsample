@@ -1,4 +1,5 @@
 // ウィンドウ関連の処理
+#define USE_OCULUS_RIFT
 #include "Window.h"
 
 // 標準ライブラリ
@@ -67,29 +68,39 @@ int main()
   // ウィンドウが開いている間繰り返す
   while (!window.shouldClose())
   {
-    // 画面を消去する
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    window.start();
 
-    // 現在のウィンドウの縦横比を調べる
-    const GLfloat aspect(window.getAspect());
+    for (int eye = 0; eye < ovrEye_Count; ++eye)
+    {
+      GLfloat screen[4], position[4], orientation[4];
 
-    // 投影変換行列を求める
-    const GgMatrix mp(ggPerspective(1.0f, aspect, zNear, zFar));
+      // 描画する目を選択してトラッキング情報を得る
+      window.select(eye, screen, position, orientation);
 
-    // 視野変換行列を求める
-    const GgMatrix mv(ggTranslate(origin));
+      // 画面を消去する
+      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    // モデル変換行列はトラックボール処理とする
-    const GgMatrix mm(window.getLeftTrackball());
+      // 投影変換行列を求める
+      const GgMatrix mp(ggFrustum(screen[0] * zNear, screen[1] * zNear, screen[2] * zNear, screen[3] * zNear, zNear, zFar));
 
-    // 描画用のシェーダプログラムの使用開始
-    shader.use();
-    shader.selectLight(light);
-    shader.selectMaterial(material);
-    shader.loadMatrix(mp, mv * mm);
+      // 視野変換行列を求める
+      const GgMatrix mv(GgQuaternion(orientation).getMatrix() * ggTranslate(position) * ggTranslate(origin));
 
-    // 図形を描画する
-    obj->draw();
+      // モデル変換行列はトラックボール処理とする
+      const GgMatrix mm(window.getLeftTrackball());
+
+      // 描画用のシェーダプログラムの使用開始
+      shader.use();
+      shader.selectLight(light);
+      shader.selectMaterial(material);
+      shader.loadMatrix(mp, mv * mm);
+
+      // 図形を描画する
+      obj->draw();
+
+      // 片目の描画を完了する
+      window.commit(eye);
+    }
 
     // ダブルバッファリング
     window.swapBuffers();
